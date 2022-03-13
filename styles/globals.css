@@ -1,0 +1,12 @@
+html,
+body {
+  background-color: rgb(170, 158, 158);
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+}
