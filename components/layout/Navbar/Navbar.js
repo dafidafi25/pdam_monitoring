@@ -134,7 +134,7 @@ const ResponsiveAppBar = () => {
               <MenuItem onClick={handleCloseUserMenu}>
                 <Typography
                   onClick={() => {
-                    setUser(false);
+                    setUser({});
                     router.push("/login");
                   }}
                   textAlign="center"

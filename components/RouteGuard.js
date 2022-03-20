@@ -12,7 +12,6 @@ function RouteGuard({ children }) {
 
   useEffect(() => {
     // on initial load - run auth check
-
     authCheck(router.asPath);
 
     // on route change start - hide page content by setting authorized to false
@@ -35,7 +34,7 @@ function RouteGuard({ children }) {
     // redirect to login page if accessing a private page and not logged in
     const publicPaths = ["/login"];
     const path = url.split("?")[0];
-    if (!user && !publicPaths.includes(path)) {
+    if (user == {} && !publicPaths.includes(path)) {
       setAuthorized(false);
       router.push({
         pathname: "/login",

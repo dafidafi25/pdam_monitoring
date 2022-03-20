@@ -12,19 +12,15 @@ import {
   Paper,
   Box,
   Input,
+  Select,
+  MenuItem,
+  Stack,
   Button,
+  TextField,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
-
-const StyledTableCell = styled(TableCell)(({ theme }) => ({
-  [`&.${tableCellClasses.head}`]: {
-    backgroundColor: theme.palette.common.black,
-    color: theme.palette.common.white,
-  },
-  [`&.${tableCellClasses.body}`]: {
-    fontSize: 14,
-  },
-}));
+import { useContext } from "react";
+import { UserContext } from "../store/authentication";
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
   backgroundColor: "#1976D2",
@@ -34,34 +30,43 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   },
 }));
 
-function createData(name, calories, fat, carbs, protein) {
-  return { name, calories, fat, carbs, protein };
+function createData(
+  timeOfMonth,
+  currentMonthlyUsage,
+  currentUsage,
+  totalPrice
+) {
+  return {
+    timeOfMonth,
+    currentMonthlyUsage,
+    currentUsage,
+    totalPrice,
+  };
 }
 
 const rows = [
-  createData("Frozen yoghurt", 159, 6.0, 24),
-  createData("Ice cream sandwich", 237, 9.0, 37),
-  createData("Eclair", 262, 16.0, 24),
-  createData("Cupcake", 305, 3.7, 67),
-  createData("Gingerbread", 356, 16.0, 49),
+  createData("August", 1500, 2000, 12000),
+  createData("July", 500, 1500, 4000),
 ];
 
 const thead = [
   {
-    name: "Pemakaian Bulan Ini",
+    name: "Waktu",
   },
   {
-    name: "Meteran Bulan Ini",
+    name: "Pemakaian (Liter)",
   },
   {
-    name: "Total Pemakaian",
+    name: "Total Meteran (Liter)",
   },
   {
-    name: "Total Biaya",
+    name: "Total Biaya (IDR)",
   },
 ];
 
 export default function Home() {
+  const { user, setUser } = useContext(UserContext);
+
   return (
     <Card variant="outlined">
       <CardContent>
@@ -69,16 +74,48 @@ export default function Home() {
           sx={{
             display: "flex",
             marginY: 3,
+            justifyContent: "center",
+          }}
+        >
+          <Box>
+            <div>Nama Pengguna</div>
+            <div>Alamat</div>
+            <div>Meteran Saat ini</div>
+            <div>ID Pengguna</div>
+          </Box>
+          <Box sx={{ marginLeft: 3 }}>
+            <div>:</div>
+            <div>:</div>
+            <div>:</div>
+            <div>:</div>
+          </Box>
+          <Box sx={{ marginLeft: 3 }}>
+            <div>Alif</div>
+            <div>Surabaya</div>
+            <div>3500</div>
+            <div>Alif25</div>
+          </Box>
+        </Box>
+        <Box
+          sx={{
+            display: "flex",
+            marginY: 3,
             justifyContent: "space-between",
           }}
         >
-          <div>twes</div>
           <div>
-            <label html-for="filter">wa</label>
-            <Input id="filter tabel"></Input>
+            <Stack>
+              <div> Search : </div>
+              <TextField
+                variant="outlined"
+                size="small"
+                id="filter tabel"
+                placeholder="example (August)"
+              ></TextField>
+            </Stack>
           </div>
         </Box>{" "}
-        <div style={{ height: 400, width: "100%" }}>
+        <div style={{ width: "100%", marginBottom: 20 }}>
           {" "}
           <TableContainer component={Paper}>
             <Table sx={{ minWidth: 650 }} aria-label="customized table">
@@ -97,9 +134,11 @@ export default function Home() {
                       </TableCell>
                     );
                   })}
-                  <TableCell>
-                    <Typography sx={{ color: "white" }}> Button</Typography>
-                  </TableCell>
+                  {user.role == "admin" && (
+                    <TableCell>
+                      <Typography sx={{ color: "white" }}>Action</Typography>
+                    </TableCell>
+                  )}
                 </StyledTableRow>
               </TableHead>
               <TableBody>
@@ -112,21 +151,52 @@ export default function Home() {
                       {index + 1}
                     </TableCell>
                     <TableCell component="th" scope="row">
-                      {row.name}
+                      {row.timeOfMonth}
                     </TableCell>
-                    <TableCell>{row.calories}</TableCell>
-                    <TableCell>{row.fat}</TableCell>
-                    <TableCell>{row.carbs}</TableCell>
+                    <TableCell component="th" scope="row">
+                      {row.currentMonthlyUsage}
+                    </TableCell>
+                    <TableCell>{row.currentUsage}</TableCell>
                     <TableCell>
-                      <Button>wewe</Button>
+                      Rp.
+                      {row.totalPrice
+                        .toFixed(2)
+                        .replace(/\d(?=(\d{3})+\.)/g, "$&,")}
+                      ,-
                     </TableCell>
+                    {user.role == "admin" && (
+                      <TableCell>
+                        <Button color="primary" variant="contained">
+                          On
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </TableContainer>
         </div>
-        <Pagination onChange={() => console.log("tes")} count={10} />
+        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+          <div>
+            Show
+            <Select
+              labelId="demo-simple-select-label"
+              id="demo-simple-select"
+              label="Age"
+              sx={{ marginX: 3 }}
+              defaultValue={5}
+              size="small"
+            >
+              <MenuItem value={5}>5</MenuItem>
+              <MenuItem value={10}>10</MenuItem>
+              <MenuItem value={20}>20</MenuItem>
+              <MenuItem value={30}>30</MenuItem>
+            </Select>{" "}
+            data of xxx data
+          </div>
+          <Pagination onChange={() => console.log("tes")} count={10} />
+        </Box>
       </CardContent>
     </Card>
   );

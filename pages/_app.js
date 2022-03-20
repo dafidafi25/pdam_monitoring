@@ -7,7 +7,7 @@ import { useMemo, useState } from "react";
 import { RouteGuard } from "../components/RouteGuard";
 
 export default function MyApp({ Component, pageProps }) {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState({});
   const router = useRouter();
 
   return (
