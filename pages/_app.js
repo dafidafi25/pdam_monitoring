@@ -1,6 +1,6 @@
 import "../styles/globals.css";
 import Layout from "../components/layout/Navbar/Navbar";
-import { Box } from "@mui/material";
+import { Box, Container } from "@mui/material";
 import { useRouter } from "next/router";
 import { UserContext } from "../store/authentication";
 import { useMemo, useState } from "react";
@@ -15,7 +15,9 @@ export default function MyApp({ Component, pageProps }) {
       <Box sx={{ display: "flex", flexDirection: "column" }}>
         {router.pathname != "/login" && <Layout />}
         <RouteGuard>
-          <Component {...pageProps} />
+          <Container maxWidth="xl" sx={{ marginTop: 3 }}>
+            <Component {...pageProps} />
+          </Container>
         </RouteGuard>
       </Box>
     </UserContext.Provider>
