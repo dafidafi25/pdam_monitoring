@@ -33,7 +33,7 @@ export default function Login() {
         <Image alt="Logo_login" src={logo_small} width={200} height={200} />
       </Grid>
       <Grid item>
-        <Input></Input>
+        <Input />
       </Grid>
     </Grid>
   );

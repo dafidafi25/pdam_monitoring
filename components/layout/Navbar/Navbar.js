@@ -15,8 +15,9 @@ import { indigo } from "@mui/material/colors";
 import { UserContext } from "../../../store/authentication";
 import { useRouter } from "next/router";
 import Router from "../../RouteGuard";
+import Swal from "sweetalert2";
 
-const pages = ["Products", "Pricing", "Blog"];
+const pages = [""];
 
 const ResponsiveAppBar = () => {
   const { user, setUser } = React.useContext(UserContext);
@@ -49,6 +50,15 @@ const ResponsiveAppBar = () => {
             noWrap
             component="div"
             sx={{ mr: 2, display: { xs: "none", md: "flex" } }}
+            onClick={() => {
+              Swal.fire({
+                title: "Loading Data",
+                didOpen: () => {
+                  Swal.showLoading();
+                },
+              });
+              router.replace({ pathname: "/" });
+            }}
           >
             Monitoring Penggunaan air
           </Typography>
