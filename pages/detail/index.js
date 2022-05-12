@@ -20,6 +20,7 @@ import {
   Grid,
   Modal,
   Stack,
+  FormControl,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import Button from "@mui/material/Button";
@@ -53,25 +54,6 @@ const StyledTableRow = styled(TableRow)(() => ({
   },
 }));
 
-function createData(
-  timeOfMonth,
-  currentMonthlyUsage,
-  currentUsage,
-  totalPrice
-) {
-  return {
-    timeOfMonth,
-    currentMonthlyUsage,
-    currentUsage,
-    totalPrice,
-  };
-}
-
-const rows = [
-  createData("August", 1500, 2000, 12000),
-  createData("July", 500, 1500, 4000),
-];
-
 const thead = [
   {
     name: "Waktu",
@@ -79,9 +61,7 @@ const thead = [
   {
     name: "Pemakaian (Liter)",
   },
-  {
-    name: "Total Meteran (Liter)",
-  },
+
   {
     name: "Total Biaya (IDR)",
   },
@@ -90,26 +70,59 @@ const thead = [
 export async function getServerSideProps(context) {
   const { id } = context.query;
   const { baseApi } = await getEnvironment();
+  console.log(`${baseApi}/devices/get/${id}`);
 
-  const device = await axios.get(`${baseApi}/devices/get/${id}`);
-
+  const device = await axios.get(`${baseApi}/devices/get/${id}`, {
+    params: {
+      startMonth: "01-1-2021",
+      endMonth: "01-1-2022",
+    },
+  });
+  console.log(device.data);
   return {
-    props: { device: device.data, baseApi: baseApi },
-    // will be passed to the page component as props
+    props: {
+      device: device.data.device ? device.data.device : [],
+      baseApi: baseApi,
+      detail: device.data.detail ? device.data.detail : [],
+    },
   };
 }
 
 export default function Home(props) {
-  const { id, name, price } = props.device;
+  const { id, name } = props.device;
+  const [price, setPrice] = useState(props.device.price);
+  const [rows, setRows] = useState(props.detail);
   const [currPrice, setCurrPrice] = useState(price);
   const [newPrice, setNewPrice] = useState();
+  const [startMonth, setStartMonth] = useState(1);
+  const [startYear, setStartYear] = useState("2021");
+  const [endMonth, setEndMonth] = useState(1);
+  const [endYear, setEndyear] = useState("2022");
 
   const { user, setUser } = useContext(UserContext);
   const [open, setOpen] = useState(false);
 
+  async function getDiveDetailPage(startDate, endDate) {
+    const device = await axios.get(`${props.baseApi}/devices/get/${id}`, {
+      params: {
+        startMonth: startDate,
+        endMonth: endDate,
+      },
+    });
+    setPrice(device.data.device.price);
+    setRows(device.data.detail);
+  }
+
   useEffect(() => {
     Swal.close();
   }, []);
+
+  useEffect(() => {
+    const startDate = startYear + "-" + startMonth + "-" + "01";
+    const endDate = endYear + "-" + endMonth + "-" + "01";
+
+    getDiveDetailPage(startDate, endDate);
+  }, [startMonth, startYear, endMonth, endYear]);
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -140,6 +153,7 @@ export default function Home(props) {
           .then((res) => {
             Swal.close();
             setCurrPrice(newPrice);
+            setPrice(newPrice);
             Swal.fire("Saved!", "", "success");
           })
           .catch((err) => console.error(err));
@@ -202,28 +216,95 @@ export default function Home(props) {
       </Grid>
 
       <CardContent>
-        <Box
-          sx={{
-            display: "flex",
-            marginY: 1,
-            justifyContent: "space-between",
-            alignContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Accordion sx={{ width: 200, borderBottom: 0 }}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography>Filter</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="example (August)"
-              ></TextField>
-            </AccordionDetails>
-          </Accordion>
-        </Box>{" "}
+        <Stack spacing={2} direction="row" sx={{ marginY: 2 }}>
+          <FormControl sx={{ minWidth: 120 }}>
+            <Select
+              variant="outlined"
+              size="small"
+              placeholder="example (August)"
+              value={startMonth}
+              onChange={(e) => {
+                e.preventDefault();
+                setStartMonth(e.target.value);
+              }}
+            >
+              {MONTH.map((item, index) => {
+                return (
+                  <MenuItem value={index + 1} key={index}>
+                    {" "}
+                    {item}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
+
+          <FormControl sx={{ minWidth: 120 }}>
+            <Select
+              variant="outlined"
+              size="small"
+              placeholder="example (August)"
+              value={startYear}
+              onChange={(e) => {
+                e.preventDefault();
+                setStartYear(e.target.value);
+              }}
+            >
+              {YEAR.map((item, index) => {
+                return (
+                  <MenuItem value={item} key={index}>
+                    {" "}
+                    {item}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
+        </Stack>
+        <Stack spacing={2} direction="row" sx={{ marginY: 2 }}>
+          <FormControl sx={{ minWidth: 120 }}>
+            <Select
+              variant="outlined"
+              size="small"
+              placeholder="example (August)"
+              value={endMonth}
+              onChange={(e) => {
+                e.preventDefault();
+                setEndMonth(e.target.value);
+              }}
+            >
+              {MONTH.map((item, index) => {
+                return (
+                  <MenuItem value={index + 1} key={index}>
+                    {" "}
+                    {item}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
+          <FormControl sx={{ minWidth: 120 }}>
+            <Select
+              variant="outlined"
+              size="small"
+              placeholder="example (August)"
+              value={endYear}
+              onChange={(e) => {
+                e.preventDefault();
+                setEndyear(e.target.value);
+              }}
+            >
+              {YEAR.map((item, index) => {
+                return (
+                  <MenuItem value={item} key={index}>
+                    {" "}
+                    {item}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
+        </Stack>
         <div style={{ width: "100%", marginBottom: 20 }}>
           {" "}
           <TableContainer component={Paper}>
@@ -251,7 +332,7 @@ export default function Home(props) {
                 </StyledTableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row, index) => (
+                {rows.map((item, index) => (
                   <TableRow
                     key={index}
                     sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
@@ -260,15 +341,14 @@ export default function Home(props) {
                       {index + 1}
                     </TableCell>
                     <TableCell component="th" scope="row">
-                      {row.timeOfMonth}
+                      {getMonthName(item.date)}
                     </TableCell>
                     <TableCell component="th" scope="row">
-                      {row.currentMonthlyUsage}
+                      {item.measurement}
                     </TableCell>
-                    <TableCell>{row.currentUsage}</TableCell>
                     <TableCell>
                       Rp.
-                      {row.totalPrice
+                      {(parseFloat(item.measurement) * price)
                         .toFixed(2)
                         .replace(/\d(?=(\d{3})+\.)/g, "$&,")}
                       ,-
@@ -286,27 +366,31 @@ export default function Home(props) {
             </Table>
           </TableContainer>
         </div>
-        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-          <div>
-            Show
-            <Select
-              labelId="demo-simple-select-label"
-              id="demo-simple-select"
-              label="Age"
-              sx={{ marginX: 3 }}
-              defaultValue={5}
-              size="small"
-            >
-              <MenuItem value={5}>5</MenuItem>
-              <MenuItem value={10}>10</MenuItem>
-              <MenuItem value={20}>20</MenuItem>
-              <MenuItem value={30}>30</MenuItem>
-            </Select>{" "}
-            data of xxx data
-          </div>
-          <Pagination onChange={() => console.log("tes")} count={10} />
-        </Box>
       </CardContent>
     </Card>
   );
+}
+const MONTH = [
+  "Januari",
+  "Februari",
+  "Maret",
+  "April",
+  "Mei",
+  "Juni",
+  "Juli",
+  "Agustus",
+  "September",
+  "Oktober",
+  "November",
+  "Desember",
+];
+
+const YEAR = ["2018", "2019", "2020", "2021", "2022", "2023", "2024"];
+
+function getMonthName(date) {
+  const month_index_start = date.indexOf(".");
+  const month_index_end = date.indexOf(".", month_index_start + 1);
+  const month_string = date.substring(month_index_start + 1, month_index_end);
+  const year = date.substring(month_index_end + 1);
+  return MONTH[parseInt(month_string) - 1] + " " + year;
 }

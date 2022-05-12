@@ -41,10 +41,41 @@ function createData(
 
 export default function Home1({ name, price, id, status }) {
   const { user, setUser } = useContext(UserContext);
+  const [debit, setDebit] = useState(0);
   const [currStatus, setCurrStatus] = useState(
     parseInt(status) == 1 ? true : false
   );
   const [isHover, setIsHover] = useState(false);
+
+  const getDeviceData = async (id) => {
+    var today = new Date();
+    var date =
+      today.getFullYear() +
+      "-" +
+      (today.getMonth() + 1) +
+      "-" +
+      today.getDate();
+
+    const { baseApi } = await getEnvironment();
+
+    const device = await axios.get(`${baseApi}/devices/get/${id}`, {
+      params: {
+        startMonth: date,
+        endMonth: date,
+      },
+    });
+    const data = device.data.detail ? device.data.detail : 0;
+    if (data.length > 0) {
+      setDebit(data[0].measurement);
+    } else {
+      setDebit(0);
+    }
+    //
+  };
+
+  useEffect(() => {
+    getDeviceData(id);
+  }, []);
 
   const router = useRouter();
 
@@ -150,6 +181,7 @@ export default function Home1({ name, price, id, status }) {
             readOnly: true,
             endAdornment: "mL",
           }}
+          value={debit}
           size="small"
           fullWidth
         />
