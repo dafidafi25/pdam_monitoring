@@ -47,41 +47,42 @@ export default function Home1({ name, price, id, status }) {
   );
   const [isHover, setIsHover] = useState(false);
 
-  const getDeviceData = async (id) => {
-    var today = new Date();
-    var date =
-      today.getFullYear() +
-      "-" +
-      (today.getMonth() + 1) +
-      "-" +
-      today.getDate();
-
-    const { baseApi } = await getEnvironment();
-
-    const device = await axios.get(`${baseApi}/devices/get/${id}`, {
-      params: {
-        startMonth: date,
-        endMonth: date,
-      },
-    });
-    const data = device.data.detail ? device.data.detail : 0;
-    if (data.length > 0) {
-      setDebit(data[0].measurement);
-    } else {
-      setDebit(0);
-    }
-    //
-  };
-
   useEffect(() => {
+    const getDeviceData = async (id) => {
+      var today = new Date();
+      var date =
+        today.getFullYear() +
+        "." +
+        (today.getMonth() + 1) +
+        "." +
+        today.getDate();
+
+      const { baseApi } = await getEnvironment();
+
+      const device = await axios.get(`${baseApi}/device/data/${id}`, {
+        params: {
+          startMonth: date,
+          endMonth: date,
+        },
+      });
+      const data = device.data.detail ? device.data.detail : 0;
+      if (data.length > 0) {
+        setDebit(data[0].measurement);
+      } else {
+        setDebit(0);
+      }
+      //
+    };
+
     getDeviceData(id);
-  }, []);
+  }, [id]);
 
   const router = useRouter();
 
   const handleValveChange = (e) => {
-    setCurrStatus(e.target.checked);
-    setValve(e.target.checked);
+    console.log(e.target.checked);
+    setCurrStatus(!e.target.checked);
+    setValve(!e.target.checked);
   };
 
   const setValve = async (trigger) => {
@@ -129,7 +130,8 @@ export default function Home1({ name, price, id, status }) {
                 Swal.showLoading();
               },
             });
-            router.push({ pathname: "/detail", query: { id: id } });
+
+            location.href = "/detail?id=" + id;
           }}
           style={{ color: isHover ? "1976D2" : "AA9E9E" }}
         />
@@ -165,7 +167,7 @@ export default function Home1({ name, price, id, status }) {
         my={3}
       >
         <InvertColorsOutlinedIcon color="primary" sx={{ fontSize: 80 }} />
-        <Switch checked={currStatus} onChange={handleValveChange} />
+        <Switch checked={!currStatus} onChange={handleValveChange} />
       </Grid>
 
       <Stack
@@ -179,9 +181,9 @@ export default function Home1({ name, price, id, status }) {
           rows={6}
           InputProps={{
             readOnly: true,
-            endAdornment: "mL",
+            endAdornment: "L",
           }}
-          value={debit}
+          value={Math.round(debit / 10) / 100}
           size="small"
           fullWidth
         />

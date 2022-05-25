@@ -27,7 +27,6 @@ import Button from "@mui/material/Button";
 import { useContext, useEffect, useRef, useState } from "react";
 import { UserContext } from "../../store/authentication";
 import Swal from "sweetalert2";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import axios from "axios";
 import getEnvironment from "../../store/getEnvironment";
 
@@ -61,31 +60,87 @@ const thead = [
   {
     name: "Pemakaian (Liter)",
   },
+  {
+    name: "Biaya (IDR)",
+  },
 
   {
     name: "Total Biaya (IDR)",
   },
 ];
 
+function getUniqueDate(dateList) {
+  let uniqueData = [];
+  for (const date of dateList) {
+    let check = date.split(".");
+    check = check[0] + "." + check[1] + "." + "01";
+    if (!uniqueData.includes(check)) {
+      uniqueData.push(check);
+    }
+  }
+  return uniqueData;
+}
+
 export async function getServerSideProps(context) {
   const { id } = context.query;
   const { baseApi } = await getEnvironment();
-  console.log(`${baseApi}/devices/get/${id}`);
 
-  const device = await axios.get(`${baseApi}/devices/get/${id}`, {
+  const device = await axios.get(`${baseApi}/devices/get/${id}`);
+
+  const data = await axios.get(`${baseApi}/data/list/`, {
     params: {
-      startMonth: "01-1-2021",
-      endMonth: "01-1-2022",
+      id: id,
     },
   });
-  console.log(device.data);
+
+  const validateDates = data.data;
+  let notTransactions = [];
+  let transaction = [];
+
+  for (const validateDate of validateDates) {
+    const { DATE } = validateDate;
+    const parseDate = DATE.split(".");
+    const updatedDATE = parseDate[2] + "." + parseDate[1] + "." + parseDate[0];
+    const check = await axios.post(`${baseApi}/transaction`, {
+      id: id,
+      date: DATE,
+    });
+
+    check.data.length == 0
+      ? notTransactions.push(updatedDATE)
+      : transaction.push(updatedDATE);
+  }
+  notTransactions = getUniqueDate(notTransactions);
+  let tableNotTransactions = [];
+  for (const notTransaction of notTransactions) {
+    const data = await axios.get(`${baseApi}/device/data/${id}`, {
+      params: { startMonth: notTransaction, endMonth: notTransaction },
+    });
+
+    tableNotTransactions.push(data.data.detail[0]);
+  }
+
+  const tableTransaction = await axios.get(`${baseApi}/transaction/list`, {
+    params: { id: id },
+  });
+
+  const totalTable = [...tableTransaction.data, ...tableNotTransactions];
+
   return {
     props: {
-      device: device.data.device ? device.data.device : [],
+      device: device.data.device,
       baseApi: baseApi,
-      detail: device.data.detail ? device.data.detail : [],
+      detail: totalTable,
+      dataList: [],
     },
   };
+}
+let username = "";
+let role = "";
+
+if (typeof window !== "undefined") {
+  username = localStorage.getItem("username");
+  role = localStorage.getItem("role");
 }
 
 export default function Home(props) {
@@ -94,35 +149,16 @@ export default function Home(props) {
   const [rows, setRows] = useState(props.detail);
   const [currPrice, setCurrPrice] = useState(price);
   const [newPrice, setNewPrice] = useState();
-  const [startMonth, setStartMonth] = useState(1);
-  const [startYear, setStartYear] = useState("2021");
-  const [endMonth, setEndMonth] = useState(1);
-  const [endYear, setEndyear] = useState("2022");
+  const user = {
+    username: username,
+    role: role,
+  };
 
-  const { user, setUser } = useContext(UserContext);
   const [open, setOpen] = useState(false);
-
-  async function getDiveDetailPage(startDate, endDate) {
-    const device = await axios.get(`${props.baseApi}/devices/get/${id}`, {
-      params: {
-        startMonth: startDate,
-        endMonth: endDate,
-      },
-    });
-    setPrice(device.data.device.price);
-    setRows(device.data.detail);
-  }
 
   useEffect(() => {
     Swal.close();
   }, []);
-
-  useEffect(() => {
-    const startDate = startYear + "-" + startMonth + "-" + "01";
-    const endDate = endYear + "-" + endMonth + "-" + "01";
-
-    getDiveDetailPage(startDate, endDate);
-  }, [startMonth, startYear, endMonth, endYear]);
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -131,13 +167,12 @@ export default function Home(props) {
     setOpen(false);
     Swal.fire({
       title: "Cek Kembali !!",
-      text: `Ganti biaya air menjadi ${newPrice} /mL`,
+      text: `Ganti biaya air menjadi ${newPrice} /L`,
       showDenyButton: true,
       showCancelButton: true,
       confirmButtonText: "Save",
       denyButtonText: `Don't save`,
     }).then((result) => {
-      /* Read more about isConfirmed, isDenied below */
       if (result.isConfirmed) {
         Swal.fire({
           title: "Loading Data",
@@ -155,6 +190,7 @@ export default function Home(props) {
             setCurrPrice(newPrice);
             setPrice(newPrice);
             Swal.fire("Saved!", "", "success");
+            location.reload();
           })
           .catch((err) => console.error(err));
       } else if (result.isDenied) {
@@ -191,120 +227,33 @@ export default function Home(props) {
           </Stack>
         </Box>
       </Modal>
-      <Grid
-        container
-        direction="row"
-        alignItems="center"
-        justifyContent="space-around"
-        mx={4}
-        mt={4}
-      >
-        <Typography variant="h5">
-          Harga Sekarang : Rp.{" "}
-          {parseInt(currPrice)
-            .toFixed(2)
-            .replace(/\d(?=(\d{3})+\.)/g, "$&,")}{" "}
-          /mL
-        </Typography>
-        <Button
-          variant="contained"
-          onClick={handleOpen}
-          sx={{ borderRadius: 2, width: 150 }}
+      {user.role == "admin" && (
+        <Grid
+          container
+          direction="row"
+          alignItems="center"
+          justifyContent="space-around"
+          mx={4}
+          mt={4}
         >
-          Ubah Harga
-        </Button>
-      </Grid>
+          <Typography variant="h5">
+            Harga Sekarang : Rp.{" "}
+            {parseInt(currPrice)
+              .toFixed(2)
+              .replace(/\d(?=(\d{3})+\.)/g, "$&,")}{" "}
+            /L
+          </Typography>
+          <Button
+            variant="contained"
+            onClick={handleOpen}
+            sx={{ borderRadius: 2, width: 150 }}
+          >
+            Ubah Harga
+          </Button>
+        </Grid>
+      )}
 
       <CardContent>
-        <Stack spacing={2} direction="row" sx={{ marginY: 2 }}>
-          <FormControl sx={{ minWidth: 120 }}>
-            <Select
-              variant="outlined"
-              size="small"
-              placeholder="example (August)"
-              value={startMonth}
-              onChange={(e) => {
-                e.preventDefault();
-                setStartMonth(e.target.value);
-              }}
-            >
-              {MONTH.map((item, index) => {
-                return (
-                  <MenuItem value={index + 1} key={index}>
-                    {" "}
-                    {item}
-                  </MenuItem>
-                );
-              })}
-            </Select>
-          </FormControl>
-
-          <FormControl sx={{ minWidth: 120 }}>
-            <Select
-              variant="outlined"
-              size="small"
-              placeholder="example (August)"
-              value={startYear}
-              onChange={(e) => {
-                e.preventDefault();
-                setStartYear(e.target.value);
-              }}
-            >
-              {YEAR.map((item, index) => {
-                return (
-                  <MenuItem value={item} key={index}>
-                    {" "}
-                    {item}
-                  </MenuItem>
-                );
-              })}
-            </Select>
-          </FormControl>
-        </Stack>
-        <Stack spacing={2} direction="row" sx={{ marginY: 2 }}>
-          <FormControl sx={{ minWidth: 120 }}>
-            <Select
-              variant="outlined"
-              size="small"
-              placeholder="example (August)"
-              value={endMonth}
-              onChange={(e) => {
-                e.preventDefault();
-                setEndMonth(e.target.value);
-              }}
-            >
-              {MONTH.map((item, index) => {
-                return (
-                  <MenuItem value={index + 1} key={index}>
-                    {" "}
-                    {item}
-                  </MenuItem>
-                );
-              })}
-            </Select>
-          </FormControl>
-          <FormControl sx={{ minWidth: 120 }}>
-            <Select
-              variant="outlined"
-              size="small"
-              placeholder="example (August)"
-              value={endYear}
-              onChange={(e) => {
-                e.preventDefault();
-                setEndyear(e.target.value);
-              }}
-            >
-              {YEAR.map((item, index) => {
-                return (
-                  <MenuItem value={item} key={index}>
-                    {" "}
-                    {item}
-                  </MenuItem>
-                );
-              })}
-            </Select>
-          </FormControl>
-        </Stack>
         <div style={{ width: "100%", marginBottom: 20 }}>
           {" "}
           <TableContainer component={Paper}>
@@ -324,11 +273,10 @@ export default function Home(props) {
                       </TableCell>
                     );
                   })}
-                  {user.role == "admin" && (
-                    <TableCell>
-                      <Typography sx={{ color: "white" }}>Action</Typography>
-                    </TableCell>
-                  )}
+
+                  <TableCell>
+                    <Typography sx={{ color: "white" }}>Status</Typography>
+                  </TableCell>
                 </StyledTableRow>
               </TableHead>
               <TableBody>
@@ -344,22 +292,97 @@ export default function Home(props) {
                       {getMonthName(item.date)}
                     </TableCell>
                     <TableCell component="th" scope="row">
-                      {item.measurement}
+                      {item.status_transaksi == undefined &&
+                        Math.round(item.measurement / 10) / 100}
+                      {item.status_transaksi != undefined && item.measurement}
                     </TableCell>
                     <TableCell>
                       Rp.
-                      {(parseFloat(item.measurement) * price)
-                        .toFixed(2)
-                        .replace(/\d(?=(\d{3})+\.)/g, "$&,")}
+                      {item.status_transaksi == undefined &&
+                        parseInt(price)
+                          .toFixed(2)
+                          .replace(/\d(?=(\d{3})+\.)/g, "$&,")}
+                      {item.status_transaksi != undefined &&
+                        parseInt(item.price)
+                          .toFixed(2)
+                          .replace(/\d(?=(\d{3})+\.)/g, "$&,")}
+                    </TableCell>
+                    <TableCell>
+                      Rp.
+                      {item.status_transaksi == undefined &&
+                        (
+                          parseFloat(Math.round(item.measurement / 10) / 100) *
+                          price
+                        )
+                          .toFixed(2)
+                          .replace(/\d(?=(\d{3})+\.)/g, "$&,")}
+                      {item.status_transaksi != undefined &&
+                        (parseFloat(item.measurement) * item.price)
+                          .toFixed(2)
+                          .replace(/\d(?=(\d{3})+\.)/g, "$&,")}
                       ,-
                     </TableCell>
-                    {user.role == "admin" && (
-                      <TableCell>
-                        <Button color="primary" variant="contained">
-                          On
-                        </Button>
-                      </TableCell>
-                    )}
+                    {user.role == "user" &&
+                      item.status_transaksi != undefined && (
+                        <TableCell>
+                          {item.status_transaksi == 1 ? "Lunas" : "Belum Lunas"}
+                        </TableCell>
+                      )}
+
+                    {user.role == "user" &&
+                      item.status_transaksi == undefined && (
+                        <TableCell>{"Proses"}</TableCell>
+                      )}
+
+                    {user.role == "admin" &&
+                      item.status_transaksi == undefined && (
+                        <TableCell>
+                          <Button
+                            sx={{ minWidth: 125 }}
+                            color="primary"
+                            variant="contained"
+                            onClick={() => {
+                              axios
+                                .post(`${props.baseApi}/transaksi/set`, {
+                                  date: item.date,
+                                  measurement:
+                                    Math.round(item.measurement / 10) / 100,
+                                  price: price,
+                                  device_id: id,
+                                  status_transaksi: 0,
+                                })
+                                .then(() => location.reload());
+                            }}
+                          >
+                            Simpan Transaksi
+                          </Button>
+                        </TableCell>
+                      )}
+                    {user.role == "admin" &&
+                      item.status_transaksi != undefined && (
+                        <TableCell>
+                          <Button
+                            sx={{ minWidth: 125 }}
+                            color={
+                              item.status_transaksi == 1 ? "primary" : "error"
+                            }
+                            variant="contained"
+                            onClick={() => {
+                              if (item.status_transaksi == 1) return;
+
+                              axios
+                                .get(`${props.baseApi}/transaksi/update`, {
+                                  params: { transaksi_id: item.transaksi_id },
+                                })
+                                .then(() => location.reload());
+                            }}
+                          >
+                            {item.status_transaksi == 1
+                              ? "Lunas"
+                              : "Belum Lunas"}
+                          </Button>
+                        </TableCell>
+                      )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -384,8 +407,6 @@ const MONTH = [
   "November",
   "Desember",
 ];
-
-const YEAR = ["2018", "2019", "2020", "2021", "2022", "2023", "2024"];
 
 function getMonthName(date) {
   const month_index_start = date.indexOf(".");
