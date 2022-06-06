@@ -19,6 +19,14 @@ import Swal from "sweetalert2";
 
 const pages = [""];
 
+let username = "";
+let role = "";
+
+if (typeof window !== "undefined") {
+  username = localStorage.getItem("username");
+  role = localStorage.getItem("role");
+}
+
 const ResponsiveAppBar = () => {
   const { user, setUser } = React.useContext(UserContext);
   const router = useRouter();
@@ -51,59 +59,36 @@ const ResponsiveAppBar = () => {
             component="div"
             sx={{ mr: 2, display: { xs: "none", md: "flex" } }}
             onClick={() => {
-              Swal.fire({
-                title: "Loading Data",
-                didOpen: () => {
-                  Swal.showLoading();
-                },
-              });
-              router.replace({ pathname: "/" });
+              if (role == "admin") {
+                Swal.fire({
+                  title: "Loading Data",
+                  didOpen: () => {
+                    Swal.showLoading();
+                  },
+                });
+                location.href = "/";
+              }
             }}
           >
             Monitoring Penggunaan air
           </Typography>
 
-          <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
-            <IconButton
-              size="large"
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleOpenNavMenu}
-              color="inherit"
-            >
-              <MenuIcon />
-            </IconButton>
-            <Menu
-              id="menu-appbar"
-              anchorEl={anchorElNav}
-              anchorOrigin={{
-                vertical: "bottom",
-                horizontal: "left",
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: "top",
-                horizontal: "left",
-              }}
-              open={Boolean(anchorElNav)}
-              onClose={handleCloseNavMenu}
-              sx={{
-                display: { xs: "block", md: "none" },
-              }}
-            >
-              {pages.map((page) => (
-                <MenuItem key={page} onClick={handleCloseNavMenu}>
-                  <Typography textAlign="center">{page}</Typography>
-                </MenuItem>
-              ))}
-            </Menu>
-          </Box>
           <Typography
             variant="h6"
             noWrap
             component="div"
             sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}
+            onClick={() => {
+              if (role == "admin") {
+                Swal.fire({
+                  title: "Loading Data",
+                  didOpen: () => {
+                    Swal.showLoading();
+                  },
+                });
+                location.href = "/";
+              }
+            }}
           >
             Monitoring Penggunaan Air
           </Typography>
@@ -118,7 +103,7 @@ const ResponsiveAppBar = () => {
               </Button>
             ))}
           </Box>
-          <Typography sx={{ margin: 2 }}>Halo User A</Typography>
+
           <Box sx={{ flexGrow: 0 }}>
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
@@ -145,7 +130,8 @@ const ResponsiveAppBar = () => {
                 <Typography
                   onClick={() => {
                     setUser({});
-                    router.push("/login");
+                    localStorage.clear();
+                    location.href = "/";
                   }}
                   textAlign="center"
                 >

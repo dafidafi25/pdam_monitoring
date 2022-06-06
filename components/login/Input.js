@@ -10,7 +10,12 @@ const loginData = [
     role: "admin",
   },
   {
-    id: "alif",
+    id: "alif1",
+    pass: 123,
+    role: "user",
+  },
+  {
+    id: "alif2",
     pass: 123,
     role: "user",
   },
@@ -32,16 +37,21 @@ export default function Input() {
             ({ id }) => id == username.value
           );
           if (indexArr == -1) return;
-          console.log(loginData[indexArr].pass == password.value);
           if (loginData[indexArr].pass != password.value) return;
-          console.log("masok");
           const userData = {
             username: username.value,
             password: password.value,
             role: loginData[indexArr].role,
           };
-          setUser(userData);
-          router.push({ pathname: "/" });
+          localStorage.setItem("username", username.value);
+          localStorage.setItem("password", password.value);
+          localStorage.setItem("role", loginData[indexArr].role);
+          location.href =
+            username.value == "admin"
+              ? "/"
+              : username.value == "alif1"
+              ? "/detail?id=1"
+              : "/detail?id=2";
         }}
       >
         <Grid container spacing={2} direction="column">

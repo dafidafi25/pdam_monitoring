@@ -3,11 +3,12 @@ import Layout from "../components/layout/Navbar/Navbar";
 import { Box, Container } from "@mui/material";
 import { useRouter } from "next/router";
 import { UserContext } from "../store/authentication";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { RouteGuard } from "../components/RouteGuard";
+import getLocalStorage from "../store/getLocalStorage";
 
 export default function MyApp({ Component, pageProps }) {
-  const [user, setUser] = useState({});
+  const [user, setUser] = useState();
   const router = useRouter();
 
   return (
